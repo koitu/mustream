@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     'mustream.core',
     'rest_framework',
 
+    #'django.contrib.contenttypes',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
