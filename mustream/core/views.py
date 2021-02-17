@@ -1,9 +1,78 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from mustream.core.models import MuUser, Collection, Artist, Playlist, Album, Genre, Track
+from mustream.core.serializers import MuUserSerializer, CollectionSerializer, ArtistSerializer, PlaylistSerializer, AlbumSerializer, GenreSerializer, TrackSerializer, UserSerializer
+from django.http import Http404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import generics
+from rest_framework import permissions
+from mustream.core.permissions import IsOwnerOrReadOnly
 
 from django.contrib.auth.models import User
 
-from mustream.core.models import 
+
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class TrackList(generics.ListCreateAPIView):
+    queryset = Track.objects.all()
+    serializer_class = TrackSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,
+            IsOwnerOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+    # get post (list all or create new)
+
+class TrackDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Track.objects.all()
+    serializer_class = TrackSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,
+            IsOwnerOrReadOnly]
+    # get put, delete (retieve, update, or delete)
+
+#class MuUserDetails(generics.RetrieveUpdateDestroyAPIView):
+    # get put delete
+#    queryset = MuUser.objects.all()
+#    serializer_class = MuUserSerializer
+
+# class MuUserList(generics.ListCreateAPIView):
+# get post
+
+#class MuUser(APIView):
+#
+#    def get_user(self, username):
+#        try:
+#            return MuUser.objects.get(username=username)
+#        except MuUser.DoesNotExist:
+#            raise Http404
+#        # where does auth occur?
+#
+#    def get(self, request, username, format=None):
+#        muuser = self.get_user(username)
+#        serializer = MuUserSerializer(muuser)
+#        return Response(serializer.data)
+#
+#    def put(self, request, username, format=None):
+#        muuser = self.get_user(username)
+#        serializer = MuUserSerializer(muuser, data=request.data) # what is request.data?
+#        # needs varfy for premissions and existence
+#        if serializer.is_valid():
+#            serializer.save()
+#            return Response(serializer.data)
+#        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#    def delete(self, request, username, format=None):
+#        muuser = self.get_object(username)
+#        muuser.delete()
+#        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 # log to history if track was listened to for x seconds

@@ -1,22 +1,72 @@
 from rest_framework import serializers
-
+from mustream.core.models import Track, Album, Artist, Genre, Collection, MuUser, Playlist
 from django.contrib.auth.models import User
 
-from mustream.core.models import MuUser, Collection, Track# continue
 
+
+class MuUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MuUser
+        fields = ['profile_picture']
 
 
 class UserSerializer(serializers.ModelSerializer):
-    snippets = serializers.PrimaryKeyRelatedField(many=True, queryset=Snippet.objects.all()) # change Snippet and snippets to something else
-    # in the example Snippets has a reverse relationship (multiple snippets can belong to one User (Fiorenkey)) we need to add a explicit field for it
+    profile_picture = MuUserSerializer(many=False, read_only=False)
+    collection = serializers.PrimaryKeyRelatedField(many=False, queryset=Collection.objects.all())
+    playlists = serializers.PrimaryKeyRelatedField(many=True, queryset=Playlist.objects.all())
 
-    class Meta:
+    classMeta:
         model = User
-        fields = ['id', 'username', 'snippets'] # not snippets
+        fields = ['id', 'username', 'profile_picture', 'collection', 'playlists']
 
 
 class CollectionSerializer(serializers.ModelSerializer):
-    # this can be create/mod by create() and update() methods
+    editors = MuUserSerializer(many=True)
+    viewers = MuUserSerializer(many=True)
+
     class Meta:
         model = Collection
-        fields = ['id', 'title']
+        fields = ['public']
+
+class PlaylistSerializer(serializers.ModelSerializer):
+    editors = MuUserSerializer(Many=True)
+    viewers = MuUserSerializer(Many=True)
+
+    class Meta:
+        model = Playlist
+        fields = ['name', 'image', 'date_created', 'date_modified', 'public']
+
+
+class ArtistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Artist
+        fields = ['name', 'image', 'comments']
+
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ['name']
+
+class AlbumSerializer(serializers.ModelSerializer):
+    artist = ArtistSerializer(many=True)
+    
+    class Meta:
+        model = Album
+        fields = ['name', 'image', 'discs', 'tracks']
+
+class TrackSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+    album = AlbumSerializer()
+    artist = ArtistSerializer(many=True)
+    genres = GenreSerializer(many=True)
+
+    class Meta:
+        model = Track
+        fields = ['owner',
+                'title', 
+                'location', 
+                'image', 
+                'length', 
+                'release_date', 
+                'disc_number', 
+                'track_number']
