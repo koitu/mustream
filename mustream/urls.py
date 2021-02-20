@@ -15,12 +15,24 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from mustream.core import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
     path('api-auth/', include('rest_framework.urls')),
-    path('api/users/', views.UserList.as_view()),
-    path('api/users/<int:pk>/', views.UserDetails.as_view()),
 
+    path('api/users/', views.UserList.as_view()),
+    path('api/users/<int:pk>/', views.UserDetail.as_view()),
+
+    path('api/tracks/', views.TrackList.as_view()),
+    path('api/tracks/<int:pk>/', views.TrackDetail.as_view()),
+
+#    path('api/playlists/', views.PlaylistList.as_view()),
+#    path('api/playlists/<int:pk>/', views.PlaylistDetail.as_view()),
+#
+#    path('api/albums/', views.AlbumList.as_view()),
+#    path('api/albums/<int:pk>/', views.AlbumDetail.as_view()),
+#
+#    path('api/genres/', views.GenreList.as_view()),
+#    path('api/genres/<int:pk>/', views.GenreDetail.as_view()),
 ]

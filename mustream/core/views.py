@@ -1,5 +1,5 @@
-from mustream.core.models import MuUser, Collection, Artist, Playlist, Album, Genre, Track
-from mustream.core.serializers import MuUserSerializer, CollectionSerializer, ArtistSerializer, PlaylistSerializer, AlbumSerializer, GenreSerializer, TrackSerializer, UserSerializer
+from mustream.core.models import Artist, Playlist, Album, Genre, Track
+from mustream.core.serializers import ArtistSerializer, PlaylistSerializer, AlbumSerializer, GenreSerializer, TrackSerializer, UserSerializer
 from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -37,13 +37,6 @@ class TrackDetail(generics.RetrieveUpdateDestroyAPIView):
             IsOwnerOrReadOnly]
     # get put, delete (retieve, update, or delete)
 
-#class MuUserDetails(generics.RetrieveUpdateDestroyAPIView):
-    # get put delete
-#    queryset = MuUser.objects.all()
-#    serializer_class = MuUserSerializer
-
-# class MuUserList(generics.ListCreateAPIView):
-# get post
 
 #class MuUser(APIView):
 #
