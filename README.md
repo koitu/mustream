@@ -1,4 +1,5 @@
 # MuStream
+just an average web music streamer
 
 list of artists/albums/tracks to exclude
 
