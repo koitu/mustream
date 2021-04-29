@@ -1,33 +1,76 @@
 from rest_framework import serializers
 from catalog.models import Artist, Album, Genre, Track, Playlist
+from django.contrib.auth.models import User
+
+# remember to either set read_only=True or queryst=<something>
+# might need for playlistserializer (but my default I'm pretty sure they pull the pk of the objects attached
+#    tracks = serializers.PrimaryKeyRelatedField(queryset=Track.objects.all(), many=True)
 
 class AlbumSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Album
-        fields = ['name', 'album_tracks']
+        fields = ['id', 
+                'owner', 
+                'pubilc',
+                'name', 
+                'album_tracks']
 
 
 class ArtistSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Artist
-        fields = ['name', 'artist_tracks']
+        fields = ['id', 
+                'owner', 
+                'public',
+                'name', 
+                'artist_tracks']
 
 
-class GenreSerializer(serializers.GenreSerializer):
+class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ['genre', 'genre_tracks']
+        model = ['id', 
+                'name', 
+                'genre_tracks']
 
 
 class TrackSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+    # get the username of the owner
+
     class Meta:
         model = Track
-        fields = ['title', 'album', 'artist', 'genre']
+        fields = ['id', 
+                'owner', 
+                'public',
+                'force_private',
+                'title', 
+                'album', 
+                'artist', 
+                'genre']
 
 
 class PlaylistSerializer(serializers.ModelSerializer):
-    playlist_tracks = PrimaryKeyRelatedField(read_only=True, many=True) # unsure about this
+    owner = serializers.ReadOnlyField(source='owner.username')
 
     class Meta:
         model = Playlist
-        fields = ['name', 'playlist_tracks']
+        fields = ['id', 
+                'owner', 
+                'public',
+                'name', 
+                'tracks']
 
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 
+                'username', 
+                'user_tracks', 
+                'user_playlists', 
+                'user_albums', 
+                'user_artists']
