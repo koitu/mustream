@@ -32,8 +32,9 @@ class AlbumSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Album
         fields = ['id', 
-                'owner', 
                 'name', 
+                'owner', 
+                'image',
                 'album_tracks']
 
 
@@ -43,16 +44,23 @@ class ArtistSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Artist
         fields = ['id', 
-                'owner', 
                 'name', 
+                'owner', 
+                'image',
                 'artist_tracks']
 
 
 class GenreSerializer(DynamicFieldsModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
-        model = ['id', 
+        model = Genre
+        fields = ['id', 
                 'name', 
+                'owner', 
+                'image',
                 'genre_tracks']
+
 
 
 class TrackSerializer(DynamicFieldsModelSerializer):
@@ -61,11 +69,23 @@ class TrackSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Track
         fields = ['id', 
-                'owner', 
                 'title', 
+                'owner', 
+                'image',
                 'album', 
                 'artist', 
                 'genre']
+        read_only_fields = ['title', 'album', 'artist', 'genre']
+
+
+    def create(self, validated_data):
+        track = Track(
+                title=validated_date['title'],
+                image=validated_date['image']
+                )
+        track.save()
+        return track
+
 
 
 class PlaylistSerializer(DynamicFieldsModelSerializer):

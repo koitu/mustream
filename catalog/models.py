@@ -17,10 +17,14 @@ from django.contrib.auth.models import User
 # will need to figure out how to make sure on correct folder (ie two subfolders with disc 1 and 2)
 
 # add play everything in a folder
+
+
+
+
 class Album(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_albums')
     name = models.CharField(max_length=200)
-    # picture
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_albums')
+    image = models.ImageField(upload_to='album_images', default='default_album.jpg')
 
     def __str__(self):
         return self.name
@@ -28,10 +32,11 @@ class Album(models.Model):
     class Meta:
         ordering = ['name', 'id']
 
+
 class Artist(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_artists')
     name = models.CharField(max_length=200)
-    # picture 
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_artists')
+    image = models.ImageField(upload_to='artist_images', default='default_artist.jpg')
 
     def __str__(self):
         return self.name
@@ -41,7 +46,9 @@ class Artist(models.Model):
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_genres')
+    image = models.ImageField(upload_to='genre_images', default='default_genre.png')
 
     def __str__(self):
         return self.name
@@ -51,9 +58,9 @@ class Genre(models.Model):
 
 
 class Track(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_tracks')
     title = models.CharField(max_length=200)
-    # tie album with song num in album (backup will just be alpha order)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_tracks')
+    # tie album with album song num in album 
     album = models.ForeignKey(
             Album, 
             blank=True, 
@@ -75,6 +82,7 @@ class Track(models.Model):
             on_delete=models.CADCADE,
             related_name='artist_tracks'
     )
+    cover = models.ImageField(upload_to='track_images', default='default_track.jpg')
 
     def __str__(self):
         return self.title
@@ -83,16 +91,17 @@ class Track(models.Model):
         ordering = ['title', 'id'] 
 
 
+
 class Playlist(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_playlists')
     public = models.BooleanField(default=False)
     name = models.CharField(max_length=200)
-    tracks = models.ManyToManyField(
-            Track,
-            related_name='playlist_tracks'
-    )
-    # add genre/album/artist/folder to playlist ?
-    # if added fields for genre/album/artist/folder how to deal with overlapping tracks ?
+#       tracks = models.ManyToManyField(
+#               Track,
+#               related_name='playlist_tracks'
+#       )
+#       # add genre/album/artist/folder to playlist ?
+#       # if added fields for genre/album/artist/folder how to deal with overlapping tracks ?
 
     def __str__(self):
         return self.name
@@ -104,4 +113,3 @@ class Playlist(models.Model):
 class Folder(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_folders')
     path = models.FileField()
-

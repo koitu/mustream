@@ -1,17 +1,20 @@
-from catalog.models import Album, Artist, Genre, Track, Playlist, Folder
-from django.contrib.auth.models import User
-from catalog.serializers import AlbumSerializer, ArtistSerializer, GenreSerializer, TrackSerializer, PlaylistSerializer, UserSerializer, FolderSerializer
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import generics, permissions, status
+from catalog.permissions import IsOwner, IsOwnerOrIsPublic
 from django.http import Http404
-from catalog.permissions import TrackPermissions, OtherPermissions, IsOwner
+
+from django.contrib.auth.models import User
+from catalog.models import Album, Artist, Genre, Track, Playlist, Folder
+from catalog.serializers import AlbumSerializer, ArtistSerializer, GenreSerializer, TrackSerializer, PlaylistSerializer, UserSerializer, FolderSerializer
 
 
 
-# update so that on save will update album + genre + artist that the track belongs to 
+
 
 # when updatedb only change album/genre/whatever when they are using the default image
+
+
     
 
 # /tracks/
@@ -24,6 +27,7 @@ class TrackList(APIView):
         serializer = TrackSerializer(tracks, many=True, fields=('id', 'title'))
         return Response(serializer.data)
 
+    # update so that on save will update album + genre + artist that the track belongs to 
     def post(self, request, format=None):
         serializer = TrackSerializer(data=request.data)
         if serializer.is_valid():
@@ -38,12 +42,13 @@ class TrackDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [IsOwner]
     queryset = Track.objects.all()
     serializer_class = TrackSerializer
+    # update so that on delete will update album + genre + artist that the track belongs to 
+
+
 
 # /tracks/stream/
 # /tracks/id/stream/
 # play tracks under /tracks/ depending on shuffle
-
-
 
 
 # /users/ 
@@ -107,7 +112,6 @@ def get_object(pk, Model):
     except Model.DoesNotExist:
         raise Http404
 
-
 class AlbumArtistGenreDetail(APIView):
     permission_classes = [IsOwnerOrPublic]
 
@@ -124,7 +128,6 @@ class AlbumArtistGenreDetail(APIView):
             a_object.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 # /albums/id/
 class AblumDetail(AlbumArtistGenreDetail):
