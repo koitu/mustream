@@ -2,8 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-# formats: mp3, opus, aac, flac, wav, .ogg/oga/mogg, (? .webm, .m4a, .m4b, .m4p, .ape)
-
 
 # Possible next app to watch file and add to database
 
@@ -21,35 +19,39 @@ from django.contrib.auth.models import User
 # add play everything in a folder
 class Album(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_albums')
-    public = models.BooleanField(default=False)
     name = models.CharField(max_length=200)
     # picture
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', 'id']
 
 class Artist(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_artists')
-    public = models.BooleanField(default=False)
     name = models.CharField(max_length=200)
     # picture 
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', 'id']
+
 
 class Genre(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', 'id']
+
 
 class Track(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_tracks')
-    public = models.BooleanField(default=False)
-    force_private = models.BooleanField(default=False)
     title = models.CharField(max_length=200)
     # tie album with song num in album (backup will just be alpha order)
     album = models.ForeignKey(
@@ -78,7 +80,7 @@ class Track(models.Model):
         return self.title
 
     class Meta:
-        ordering = ['title'] 
+        ordering = ['title', 'id'] 
 
 
 class Playlist(models.Model):
@@ -89,6 +91,17 @@ class Playlist(models.Model):
             Track,
             related_name='playlist_tracks'
     )
+    # add genre/album/artist/folder to playlist ?
+    # if added fields for genre/album/artist/folder how to deal with overlapping tracks ?
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['name', 'id'] 
+
+
+class Folder(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_folders')
+    path = models.FileField()
+
