@@ -29,17 +29,24 @@ class TrackList(APIView):
 
     # update so that on save will update album + genre + artist that the track belongs to 
     def post(self, request, format=None):
-        serializer = TrackSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(owner=self.request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # just need to upload a file 
+        # - title will be gotten from metadata (backup title is filename)
+        # - album + artist + genre will be created if non existent otherise they will album will be added to
+        # post will 
+
+
+#        serializer = TrackSerializer(data=request.data)
+#        if serializer.is_valid():
+#            serializer.save(owner=self.request.user)
+#            # Response to include created data?
+#            return Response(serializer.data, status=status.HTTP_201_CREATED)
+#        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # /tracks/id/
 # get info or destory a track
 class TrackDetail(generics.RetrieveDestroyAPIView):
-    permission_classes = [IsOwner]
+    permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
     queryset = Track.objects.all()
     serializer_class = TrackSerializer
     # update so that on delete will update album + genre + artist that the track belongs to 
@@ -81,6 +88,7 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
 # give link to /tracks/ /ablums/ /genres/ /playlists/ /folders/
 
 
+# add delete by artist/album/genre later
 class AlbumArtistGenreList(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -91,6 +99,7 @@ class AlbumArtistGenreList(APIView):
 
 # /albums/
 class AlbumList(AlbumArtistGenreList):
+    def get(self, request, format=None):
         super().get(request, Album, AlbumSerializer, format=format)
 
 # /artists/
@@ -113,7 +122,7 @@ def get_object(pk, Model):
         raise Http404
 
 class AlbumArtistGenreDetail(APIView):
-    permission_classes = [IsOwnerOrPublic]
+    permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
 
     def get(self, request, pk, Model, ModelSerializer, format=None):
         objects = self.get_object(pk, Model)
@@ -130,7 +139,7 @@ class AlbumArtistGenreDetail(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # /albums/id/
-class AblumDetail(AlbumArtistGenreDetail):
+class AlbumDetail(AlbumArtistGenreDetail):
     def get(self, request, pk, format=None):
         super().get(request, pk, Album, AlbumSerializer, format=format)
 

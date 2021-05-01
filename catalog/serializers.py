@@ -36,6 +36,7 @@ class AlbumSerializer(DynamicFieldsModelSerializer):
                 'owner', 
                 'image',
                 'album_tracks']
+        read_only_fields = ['id', 'name', 'owner', 'album_tracks']
 
 
 class ArtistSerializer(DynamicFieldsModelSerializer):
@@ -48,6 +49,7 @@ class ArtistSerializer(DynamicFieldsModelSerializer):
                 'owner', 
                 'image',
                 'artist_tracks']
+        read_only_fields = ['id', 'name', 'owner', 'artist_tracks']
 
 
 class GenreSerializer(DynamicFieldsModelSerializer):
@@ -60,7 +62,7 @@ class GenreSerializer(DynamicFieldsModelSerializer):
                 'owner', 
                 'image',
                 'genre_tracks']
-
+        read_only_fields = ['id', 'name', 'owner', 'genre_tracks']
 
 
 class TrackSerializer(DynamicFieldsModelSerializer):
@@ -75,8 +77,13 @@ class TrackSerializer(DynamicFieldsModelSerializer):
                 'album', 
                 'artist', 
                 'genre']
-        read_only_fields = ['title', 'album', 'artist', 'genre']
-
+        read_only_fields = ['id', 
+                'title', 
+                'owner', 
+                'image', 
+                'album', 
+                'artist', 
+                'genre']
 
     def create(self, validated_data):
         track = Track(
@@ -85,6 +92,18 @@ class TrackSerializer(DynamicFieldsModelSerializer):
                 )
         track.save()
         return track
+
+
+class UserSerializer(DynamicFieldsModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 
+                'username', 
+                'user_tracks', 
+                'user_playlists', 
+                'user_folders', 
+                'user_albums', 
+                'user_artists']
 
 
 
@@ -100,16 +119,6 @@ class PlaylistSerializer(DynamicFieldsModelSerializer):
                 'tracks']
 
 
-class UserSerializer(DynamicFieldsModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 
-                'username', 
-                'user_tracks', 
-                'user_playlists', 
-                'user_folders', 
-                'user_albums', 
-                'user_artists']
 
 class FolderSerializer(DynamicFieldsModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')

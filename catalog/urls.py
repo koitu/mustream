@@ -31,8 +31,8 @@ urlpatterns = [
     path('genres/', views.GenreList.as_view()),
     path('genres/<int:pk>/', views.GenreDetail.as_view()),
 
-    path('playlists/', views.PlaylistList.as_view()),
-    path('playlists/<int:pk>/', views.PlaylistDetail.as_view()),
+#    path('playlists/', views.PlaylistList.as_view()),
+#    path('playlists/<int:pk>/', views.PlaylistDetail.as_view()),
 
     path('users/', views.UserList.as_view()),
     path('users/<int:pk>/', views.UserDetail.as_view()),

@@ -20,3 +20,14 @@ design ideas
 apps
 - catalog
 	- list + details + editing for user/playlist/album/artist/track/genre
+
+
+requirements
+- audio-metadata
+- django
+- djangorestframework
+- pillow
+
+something to manage images
+something to play audio?
+...
