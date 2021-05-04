@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics, permissions, status
+from rest_framework import generics, mixins, permissions, status
 from catalog.permissions import IsOwner, IsOwnerOrIsPublic
 from django.http import Http404
 
@@ -11,51 +11,143 @@ from catalog.serializers import AlbumSerializer, ArtistSerializer, GenreSerializ
 
 
 
-
 # when updatedb only change album/genre/whatever when they are using the default image
 
 
+# update permissions.py (might be broken right now)
+# also make sure that permissions line up with expected behaviour
+
+
+# api/
+# give link to /tracks/ /ablums/ /genres/ /playlists/ /folders/
+
+
+
+
+# api/albums/ 
+class AlbumList(generics.ListAPIView):
+       permission_classes = [permissions.IsAuthenticated]
+       serializer_class = ListAlbumSerializer
+
+       def get_queryset(self):
+           return Album.objects.filter(owner=self.request.user)
+
+
+# api/artists/ 
+class ArtistList(generics.ListAPIView):
+       permission_classes = [permissions.IsAuthenticated]
+       serializer_class = ListArtistSerializer
+
+       def get_queryset(self):
+           return Artist.objects.filter(owner=self.request.user)
+
+
+# api/genres/ 
+class GenreList(generics.ListAPIView):
+       permission_classes = [permissions.IsAuthenticated]
+       serializer_class = ListGenreSerializer
+
+       def get_queryset(self):
+           return Genre.objects.filter(owner=self.request.user)
+
+
+
+# TODO: add deletion by album/artist/genre 
+# generics.RetrieveUpdateDestroyAPIView
+# if this does work properly might have to create ImageAlbumSerializer, api/albums/<pk>/update
+
+
+
+# api/albums/<pk>/ 
+class AlbumDetail(generics.RetrieveUpdateAPIView):
+       permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+       queryset = Album.objects.all()
+       serializer_class = AlbumSerializer
+
+# api/artists/<pk>/
+class ArtistDetail(generics.RetrieveUpdateAPIView):
+       permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+       queryset = Artist.objects.all()
+       serializer_class = ArtistSerializer
+
+# api/genres/<pk>/
+class GenreDetail(generics.RetrieveUpdateAPIView):
+       permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+       queryset = Genre.objects.all()
+       serializer_class = GenreSerializer
+
     
 
-# /tracks/
-# return all tracks that belong to a person or create a new one
-class TrackList(APIView):
+
+
+
+
+
+class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ListTrackSerializer
 
-    def get(self, request, format=None):
-        tracks = Track.objects.filter(owner=request.user)
-        serializer = TrackSerializer(tracks, many=True, fields=('id', 'title'))
-        return Response(serializer.data)
+    def get_queryset(self):
+       return Track.objects.filter(owner=self.request.user)
 
-    # update so that on save will update album + genre + artist that the track belongs to 
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
     def post(self, request, format=None):
-        # just need to upload a file 
-        # - title will be gotten from metadata (backup title is filename)
-        # - album + artist + genre will be created if non existent otherise they will album will be added to
-        # post will 
+        tracks = []
+        for file in request.FILES.getlist('file'):
+            try:
+                tracks.append(create_track_from_file(file, request.user))
+            except:
+                return Response(status=status.HTTP_400_BAD_REQUEST) # double check correct response
+        for track in tracks:
+            if track and track.is_valid():
+                track.save()
+        return Response(status=status.HTTP_201_CREATED)) 
+
+    # return Response(status=status.HTTP_400_BAD_REQUEST) # also return errors
+    # track.data track.errors
+
+    # response should return uploads and possible errors
+
+    def put(self, request, format=None):
+        return self.post(request, format=format)
 
 
-#        serializer = TrackSerializer(data=request.data)
-#        if serializer.is_valid():
-#            serializer.save(owner=self.request.user)
-#            # Response to include created data?
-#            return Response(serializer.data, status=status.HTTP_201_CREATED)
-#        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# /tracks/id/
-# get info or destory a track
+# get, delete api/tracks/<pk>/
 class TrackDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
     queryset = Track.objects.all()
     serializer_class = TrackSerializer
-    # update so that on delete will update album + genre + artist that the track belongs to 
 
 
+
+
+
+#   # route: api/track/<track_id>/stream
+#   class TrackStreamRoute(APIView):
+#       permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+#   
+#       def get(self, request, *args, **kwargs):
+#           try:
+#               track = Track.objects.get(id=kwargs['track_id'])
+#               fsock = track.audio_src.open('rb')
+#               response = HttpResponse(fsock)
+#               response['Content-Type'] = track.audio_format
+#               response['Content-Disposition'] = 'attachment; filename=%s' % (track.file_name.replace(' ', '-'),)
+#               response['Content-Length'] = os.path.getsize(track.audio_src.path)
+#               response['Accept-Ranges'] = 'bytes'
+#               return response
+#           except Track.DoesNotExist:
+#               raise Http404
+#           except Exception as e:
+#               print(e)
+#           return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # /tracks/stream/
 # /tracks/id/stream/
 # play tracks under /tracks/ depending on shuffle
+
 
 
 # /users/ 
@@ -84,89 +176,8 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
 
 
-# /
-# give link to /tracks/ /ablums/ /genres/ /playlists/ /folders/
 
-
-# add delete by artist/album/genre later
-class AlbumArtistGenreList(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, Model, Serializer, format=None):
-        objects = Model.object.filter(owner=request.user)
-        serializer = Serializer(objects, many=True, fields=('id', 'name'))
-        return Response(serializer.data)
-
-# /albums/
-class AlbumList(AlbumArtistGenreList):
-    def get(self, request, format=None):
-        super().get(request, Album, AlbumSerializer, format=format)
-
-# /artists/
-class ArtistList(AlbumArtistGenreList):
-    def get(self, request, format=None):
-        super().get(request, Artist, ArtistSerializer, format=format)
-
-# /genres/
-class GenreList(AlbumArtistGenreList):
-    def get(self, request, format=None):
-        super().get(request, Genre, GenreSerializer, format=format)
-
-
-
-
-def get_object(pk, Model):
-    try:
-        return Model.objects.get(pk=pk)
-    except Model.DoesNotExist:
-        raise Http404
-
-class AlbumArtistGenreDetail(APIView):
-    permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
-
-    def get(self, request, pk, Model, ModelSerializer, format=None):
-        objects = self.get_object(pk, Model)
-        serializer = ModelSerializer(objects)
-        return Response(serializer.data)
-
-    def patch(self, request, pk, Model, ModelSerializer, format=None):
-        a_object = self.get_object(pk, Model)
-        serializer = ModelSerializer(album, data=request.data, partial=True)
-        a_object.cover = serializer.cover
-        if a_object.is_valid():
-            a_object.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# /albums/id/
-class AlbumDetail(AlbumArtistGenreDetail):
-    def get(self, request, pk, format=None):
-        super().get(request, pk, Album, AlbumSerializer, format=format)
-
-    def patch(self, request, pk, format=None):
-        super().patch(request, pk, Album, AlbumSerializer, format=format)
-
-# /artists/id/
-class ArtistDetail(AlbumArtistGenreDetail):
-    def get(self, request, pk, format=None):
-        super().get(request, pk, Artist, ArtistSerializer, format=format)
-
-    def patch(self, request, pk, format=None):
-        super().patch(request, pk, Artist, ArtistSerializer, format=format)
-
-# /genres/id/
-class GenreDetail(AlbumArtistGenreDetail):
-    def get(self, request, pk, format=None):
-        super().get(request, pk, Genre, GenreSerializer, format=format)
-
-    def patch(self, request, pk, format=None):
-        super().patch(request, pk, Genre, GenreSerializer, format=format)
-
-
-
-
-
-# will implement sharing via playlists later
+# TODO: will implement sharing via playlists
 # /playlists/
 # get: list playlists that the user owns
 # put/post?: create a new empty playlist
@@ -193,48 +204,3 @@ class GenreDetail(AlbumArtistGenreDetail):
 #     permission_classes = [OtherPermissions]
 #     queryset = Playlist.objects.all()
 #     serializer_class = PlaylistSerializer
-
-
-
-
-
-
-
-# # /albums/
-# class TrackList(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-# 
-#     def get(self, request, format=None):
-#         tracks = Track.objects.filter(owner=request.user)
-#         serializer = TrackSerializer(tracks, many=True, fields=('id', 'name'))
-#         return Response(serializer.data)
-# 
-# 
-# # /ablums/id/
-# class AlbumDetail(APIView):
-#     permission_classes = [IsOwner]
-# 
-#     def get_album(self, pk):
-#         try:
-#             return Album.objects.get(pk=pk)
-#         except Album.DoesNotExist:
-#             raise Http404
-# 
-#     def get(self, request, pk, format=None):
-#         album = self.get_album(pk)
-#         serializer = AlbumSerializer(album)
-#         return Response(serializer.data)
-# 
-#     def patch(self, request, pk, format=None):
-#         album = self.get_album(pk)
-#         serializer = AlbumSerializer(album, data=request.data, partial=True)
-#         album.cover = serializer.cover
-#         if album.is_valid():
-#             album.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
