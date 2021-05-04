@@ -2,10 +2,21 @@
 
 __Status:__ not working
 
-## requirements
+## Quickstart
+cd into the folder with manage.py 
+```
+python manage.py generate_secret_key --replace
+python manage.py migrate
+python manage.py createsuperuser --username admin
+python manage.py runserver
+```
+Then vist http://127.0.0.1:8000/
+
+## Requirements
 - django
 - djangorestframework
 - django-cleanup
+- django-generate-secret-key
 - pillow
 - audio-metadata
 
@@ -18,7 +29,7 @@ __Status:__ not working
 - returning more metadata in TrackDetail
 - response when put or post in TrackList
 - deal with duplicate file names 
-- limit size of uploads
+- limit size of image and audio uploads (different limits for user and staff)
 
 ## med priority
 - pagementation

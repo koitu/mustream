@@ -23,13 +23,13 @@ MEDIA_URL = '/media/'
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: change before using and keep the secret key used in production secret!
-SECRET_KEY = 'yo'
+# SECRET_KEY = 'yo'
 
-# pip install django-generate-secret-key
+
 # python manage.py generate_secret_key
-# should create secretkey.txt in the same folder as manage.py
-# with open('secretkey.txt') as f:
-#     SECRET_KEY = f.read().strip()
+with open(os.path.join(BASE_DIR, 'secretkey.txt')) as f:
+    SECRET_KEY = f.read().strip()
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_generate_secret_key',
     'rest_framework',
     'catalog.apps.CatalogConfig',
     'django_cleanup.apps.CleanupConfig', # must be at bottom

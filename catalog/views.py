@@ -6,7 +6,7 @@ from django.http import Http404
 
 from django.contrib.auth.models import User
 from catalog.models import Album, Artist, Genre, Track, Playlist, Folder
-from catalog.serializers import AlbumSerializer, ArtistSerializer, GenreSerializer, TrackSerializer, PlaylistSerializer, UserSerializer, FolderSerializer
+from catalog.serializers import ListAlbumSerializer, ListArtistSerializer, ListGenreSerializer, ListTrackSerializer, AlbumSerializer, ArtistSerializer, GenreSerializer, TrackSerializer, PlaylistSerializer, UserSerializer, FolderSerializer
 
 
 
@@ -87,34 +87,40 @@ class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
         return self.retrieve(request, *args, **kwargs)
 
     def post(self, request, format=None):
-        tracks = []
-        for file in request.FILES.getlist('file'):
-            try:
-                tracks.append(create_track_from_file(file, request.user))
-            except:
-                return Response(status=status.HTTP_400_BAD_REQUEST) # double check correct response
-        for track in tracks:
+        try:
+            track = create_track_from_file(request.FILES['file'], request.user)
             if track and track.is_valid():
                 track.save()
-        return Response(status=status.HTTP_201_CREATED)) 
+                return Response(track.data, status=status.HTTP_201_CREATED) 
+            return Response(status=status.HTTP_400_BAD_REQUEST) 
+        except:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-    # return Response(status=status.HTTP_400_BAD_REQUEST) # also return errors
-    # track.data track.errors
-
-    # response should return uploads and possible errors
+# batch action is not great (better to just do multiple POST/PUT actions)
+#        tracks = []
+#        for file in request.FILES.getlist('file'):
+#            try:
+#                tracks.append(create_track_from_file(file, request.user))
+#            except:
+#                return Response(status=status.HTTP_400_BAD_REQUEST) # double check correct response
+#        for track in tracks:
+#            if track and track.is_valid():
+#                track.save()
+#        return Response(status=status.HTTP_201_CREATED)) 
 
     def put(self, request, format=None):
         return self.post(request, format=format)
 
+        
 
-# get, delete api/tracks/<pk>/
+# api/tracks/<pk>/
 class TrackDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
     queryset = Track.objects.all()
     serializer_class = TrackSerializer
 
 
-#   # route: api/track/<track_id>/stream
+#   # api/tracks/<pk>/stream
 #   class TrackStreamRoute(APIView):
 #       permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 #   

@@ -1,6 +1,5 @@
 # secret
 secret.*
-secretkey.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

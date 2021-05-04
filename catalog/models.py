@@ -87,7 +87,7 @@ class Track(models.Model):
             related_name='artist_tracks')
 
     def __str__(self):
-        if self.artist
+        if self.artist:
             return '%s (%s)' % (self.title, self.artist.name)
         return self.title
 
@@ -131,8 +131,8 @@ def user_path(instance, filename):
     return '{0}/{1}'.format(instance.user.username, filename)
 
 class UserSettings(models.Model):
-    user = models.OneToOne(User, on_delete=models.CASCADE, related_name'user_settings', unique=True)
-    shuffle = models.BoolField(default=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_settings', unique=True)
+    shuffle = models.BooleanField(default=False)
     image = models.ImageField(upload_to=user_path, default='default_user.jpg')
     # last played
     # play mode (what genre, artist, album, or all was being played)

@@ -40,7 +40,7 @@ def get_or_create(queryset, name, model, owner):
 
 
 def create_track_from_file(file, owner):
-    if file.size > 2e8 # 200 mb
+    if file.size > 2e8 # 200 mb is maxfilesize
         return None
 
     filename, ext = os.path.splitext(os.path.basename(file.name))
@@ -53,6 +53,7 @@ def create_track_from_file(file, owner):
     except:
         tempfile.delete()
         if ext in ('.flac', '.mp3', '.aac', '.ogg', '.opus', '.wav'):
+            # should also check if the file is playable
             return track
         return None
     else:
@@ -60,30 +61,33 @@ def create_track_from_file(file, owner):
 
     try:
         if metadata.tags.title:
-            title = metadata.tags.title 
+            title = metadata.tags.title[0]
     except:
         pass
     try:
         track.album = get_or_create(queryset=owner.user_albums.all(),
-                name=metadata.tags.album, model=Album, owner=owner)
+                name=metadata.tags.album[0], model=Album, owner=owner)
         # also need to get track_number and disc number
+        # num, total = metadat.tags.discnumber[0].split('/')
+
         # need to deal if adding file has the same name, artist, album (append id?)
+        # image?
         # if track.album is using default_image and track has a image then album.image=track.image
+        # will also need to update this when track is deleted
     except:
         pass
     try:
         track.artist = get_or_create(queryset=owner.user_artists.all(),
-                name=metadata.tags.artist, model=Artist, owner=owner)
+                name=metadata.tags.artist[0], model=Artist, owner=owner)
     except:
         pass
     try:
         track.genre = get_or_create(queryset=owner.user_genres.all(),
-                name=metadata.tags.genre, model=Genre, owner=owner)
+                name=metadata.tags.genre[0], model=Genre, owner=owner)
     except:
         pass
     try:
-        duration = metadata.streaminfo.duration.split(':')
-        track.duration = datetime.timedelta(minutes=duration[0], seconds=duration[1])
+        track.duration = datetime.timedelta(seconds=round(metadata.streaminfo.duration))
     except:
         pass
 
