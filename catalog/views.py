@@ -54,9 +54,7 @@ class GenreList(generics.ListAPIView):
 
 # TODO: add deletion by album/artist/genre 
 # generics.RetrieveUpdateDestroyAPIView
-# if this does work properly might have to create ImageAlbumSerializer, api/albums/<pk>/update
-
-
+# if this does work not properly might have to create ImageAlbumSerializer, api/albums/<pk>/update
 
 # api/albums/<pk>/ 
 class AlbumDetail(generics.RetrieveUpdateAPIView):
@@ -75,11 +73,6 @@ class GenreDetail(generics.RetrieveUpdateAPIView):
        permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
        queryset = Genre.objects.all()
        serializer_class = GenreSerializer
-
-    
-
-
-
 
 
 
@@ -121,9 +114,6 @@ class TrackDetail(generics.RetrieveDestroyAPIView):
     serializer_class = TrackSerializer
 
 
-
-
-
 #   # route: api/track/<track_id>/stream
 #   class TrackStreamRoute(APIView):
 #       permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -147,7 +137,6 @@ class TrackDetail(generics.RetrieveDestroyAPIView):
 # /tracks/stream/
 # /tracks/id/stream/
 # play tracks under /tracks/ depending on shuffle
-
 
 
 # /users/ 

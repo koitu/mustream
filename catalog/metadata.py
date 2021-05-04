@@ -4,9 +4,6 @@ import audio_metadata
 from django.dispatch import receiver
 
 
-# django-cleanup will handle image cleanup
-
-
 @receiver(models.signals.post_delete, sender=Track)
 def delete_when_empty(sender, instance, **kwargs):
     try:
@@ -94,12 +91,7 @@ def create_track_from_file(file, owner):
 
 
 
-
-
-
 # def reset_db(User)
 #   delete current db ? # is it faster to compare diff and add/rm tracks/stuff or just wipe and genreate from files
 #   for folder in user.userfolders
 #       scan_folder(folder)
-
-

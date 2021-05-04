@@ -3,6 +3,7 @@ from catalog.models import Artist, Album, Genre, Track, Playlist, Folder
 from django.contrib.auth.models import User
 
 
+# may be able to remove this
 class DynamicFieldsModelSerializer(serializers.ModelSerializer):
     """
     adds `fields` argument that controls which fields should be displayed
@@ -120,6 +121,8 @@ class TrackSerializer(DynamicFieldsModelSerializer):
 #                'album_track_number', 
 #                'album_disc_number']
 
+
+
 # extend this and use in the later parts
 class UserSerializer(DynamicFieldsModelSerializer):
     user_tracks = ListTrackSerializer(many=True)
@@ -140,6 +143,8 @@ class UserSerializer(DynamicFieldsModelSerializer):
 #        read_only_fields = ['username', 'user_tracks', 'user_artists', 'user_albums', 'user_genres']
 #                'user_folders', 
 #                'user_playlists', 
+
+
 
 # TODO:
 
