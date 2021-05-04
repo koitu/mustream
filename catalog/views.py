@@ -1,17 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics, mixins, permissions, status
+from rest_framework import generics, mixins, permissions, status, parsers
 from catalog.permissions import IsOwner, IsOwnerOrIsPublic
 from django.http import Http404
 
+from django.core.files.uploadhandler import TemporaryFileUploadHandler
 from django.contrib.auth.models import User
 from catalog.models import Album, Artist, Genre, Track, Playlist, Folder
 from catalog.serializers import ListAlbumSerializer, ListArtistSerializer, ListGenreSerializer, ListTrackSerializer, AlbumSerializer, ArtistSerializer, GenreSerializer, TrackSerializer, PlaylistSerializer, UserSerializer, FolderSerializer
-
-
-
-
-# when updatedb only change album/genre/whatever when they are using the default image
+from catalog.metadata import create_track_from_file
 
 
 # update permissions.py (might be broken right now)
@@ -20,8 +17,6 @@ from catalog.serializers import ListAlbumSerializer, ListArtistSerializer, ListG
 
 # api/
 # give link to /tracks/ /ablums/ /genres/ /playlists/ /folders/
-
-
 
 
 # api/albums/ 
@@ -54,7 +49,7 @@ class GenreList(generics.ListAPIView):
 
 # TODO: add deletion by album/artist/genre 
 # generics.RetrieveUpdateDestroyAPIView
-# if this does work not properly might have to create ImageAlbumSerializer, api/albums/<pk>/update
+# if this doesn't work properly might have to create ImageAlbumSerializer, api/albums/<pk>/update_cover
 
 # api/albums/<pk>/ 
 class AlbumDetail(generics.RetrieveUpdateAPIView):
@@ -81,37 +76,32 @@ class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
     serializer_class = ListTrackSerializer
 
     def get_queryset(self):
-       return Track.objects.filter(owner=self.request.user)
+        return Track.objects.filter(owner=self.request.user)
+
+    def initialize_request(self, request, *args, **kwargs):
+        request.upload_handlers = [TemporaryFileUploadHandler(request)] 
+        return super().initialize_request(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
+        return self.list(request, *args, **kwargs)
 
-    def post(self, request, format=None):
+    def put(self, request, format=None):
         try:
-            track = create_track_from_file(request.FILES['file'], request.user)
-            if track and track.is_valid():
+            track = create_track_from_file(request.data['file'], request.user)
+            if track:
                 track.save()
-                return Response(track.data, status=status.HTTP_201_CREATED) 
+                return Response(status=status.HTTP_201_CREATED) 
             return Response(status=status.HTTP_400_BAD_REQUEST) 
+        except ValidationError:
+            return Response(status=status.HTTP_409_CONFLICT) 
         except:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-# batch action is not great (better to just do multiple POST/PUT actions)
-#        tracks = []
-#        for file in request.FILES.getlist('file'):
-#            try:
-#                tracks.append(create_track_from_file(file, request.user))
-#            except:
-#                return Response(status=status.HTTP_400_BAD_REQUEST) # double check correct response
-#        for track in tracks:
-#            if track and track.is_valid():
-#                track.save()
-#        return Response(status=status.HTTP_201_CREATED)) 
 
-    def put(self, request, format=None):
+    def post(self, request, format=None):
         return self.post(request, format=format)
 
-        
+
 
 # api/tracks/<pk>/
 class TrackDetail(generics.RetrieveDestroyAPIView):
@@ -162,6 +152,8 @@ class UserList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 # /users/id/
 # (admin and user only) get info/update/destroy a user

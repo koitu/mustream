@@ -23,10 +23,6 @@ MEDIA_URL = '/media/'
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: change before using and keep the secret key used in production secret!
-# SECRET_KEY = 'yo'
-
-
-# python manage.py generate_secret_key
 with open(os.path.join(BASE_DIR, 'secretkey.txt')) as f:
     SECRET_KEY = f.read().strip()
 

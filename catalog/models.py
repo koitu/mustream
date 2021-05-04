@@ -13,7 +13,7 @@ class Album(models.Model):
     # default image should be image used for its first track
 
     def __str__(self):
-        return '%d: %s' % (self.id, self.name)
+        return self.name
 
     class Meta:
         ordering = ['name', 'id']
@@ -30,7 +30,7 @@ class Artist(models.Model):
     image = models.ImageField(upload_to=artist_path, default='default_artist.jpg')
 
     def __str__(self):
-        return '%d: %s' % (self.id, self.name)
+        return self.name
 
     class Meta:
         ordering = ['name', 'id']
@@ -47,7 +47,7 @@ class Genre(models.Model):
     image = models.ImageField(upload_to=genre_path, default='default_genre.png')
 
     def __str__(self):
-        return '%d: %s' % (self.id, self.name)
+        return self.name
 
     class Meta:
         ordering = ['name', 'id']
@@ -87,8 +87,6 @@ class Track(models.Model):
             related_name='artist_tracks')
 
     def __str__(self):
-        if self.artist:
-            return '%s (%s)' % (self.title, self.artist.name)
         return self.title
 
     class Meta:
@@ -97,7 +95,7 @@ class Track(models.Model):
 
 
 class TempFile(models.Model):
-    file = models.FileField(upload_to='temp_files')
+    file_src = models.FileField(upload_to='temp_files')
 
 
 # TODO:

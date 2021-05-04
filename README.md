@@ -1,11 +1,12 @@
 # mustream
 
-__Status:__ not working
+__Status:__ working but only able to upload 
 
 ## Quickstart
 cd into the folder with manage.py 
 ```
 python manage.py generate_secret_key --replace
+python manage.py makemigrations catalog
 python manage.py migrate
 python manage.py createsuperuser --username admin
 python manage.py runserver
@@ -27,8 +28,6 @@ Then vist http://127.0.0.1:8000/
 - extend User
 - api root
 - returning more metadata in TrackDetail
-- response when put or post in TrackList
-- deal with duplicate file names 
 - limit size of image and audio uploads (different limits for user and staff)
 
 ## med priority

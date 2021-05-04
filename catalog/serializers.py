@@ -3,22 +3,6 @@ from catalog.models import Artist, Album, Genre, Track, Playlist, Folder
 from django.contrib.auth.models import User
 
 
-# may be able to remove this
-class DynamicFieldsModelSerializer(serializers.ModelSerializer):
-    """
-    adds `fields` argument that controls which fields should be displayed
-    """
-
-    def __init__(self, *args, **kwargs):
-        fields = kwargs.pop('fields', None)
-
-        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
-
-        if fields is not None:
-            allowed = set(fields)
-            existing = set(self.fields)
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
 
 
 
@@ -48,7 +32,7 @@ class ListTrackSerializer(serializers.ModelSerializer):
 
 
 
-class AlbumSerializer(DynamicFieldsModelSerializer):
+class AlbumSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username')
     album_tracks = ListTrackSerializer(many=True)
 
@@ -60,10 +44,9 @@ class AlbumSerializer(DynamicFieldsModelSerializer):
                 'image',
                 'album_tracks']
         read_only_fields = [x for x in fields if x != 'image']
-#        read_only_fields = ['id', 'name', 'owner', 'album_tracks']
 
 
-class ArtistSerializer(DynamicFieldsModelSerializer):
+class ArtistSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username')
     artist_tracks = ListTrackSerializer(many=True)
 
@@ -75,10 +58,9 @@ class ArtistSerializer(DynamicFieldsModelSerializer):
                 'image',
                 'artist_tracks']
         read_only_fields = [x for x in fields if x != 'image']
-        #read_only_fields = ['id', 'name', 'owner', 'artist_tracks']
 
 
-class GenreSerializer(DynamicFieldsModelSerializer):
+class GenreSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username')
     genre_tracks = ListTrackSerializer(many=True)
 
@@ -90,8 +72,40 @@ class GenreSerializer(DynamicFieldsModelSerializer):
                 'image',
                 'genre_tracks']
         read_only_fields = [x for x in fields if x != 'image']
-        #read_only_fields = ['id', 'name', 'owner', 'genre_tracks']
 
+
+
+
+
+class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    adds `fields` argument that controls which fields should be displayed
+    """
+
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+
+        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+
+
+# if id is set on model/database level we might not need it for some serializers
+
+
+
+# used for the header with music controls
+# class SimpleTrackSerializer(serializers.ModelSerializer):
+#        fields = ['id', 
+#                'title', 
+#                'image',
+#                'duration',
+#                'album_track_number']
 
 
 class TrackSerializer(DynamicFieldsModelSerializer):
@@ -114,13 +128,6 @@ class TrackSerializer(DynamicFieldsModelSerializer):
                 'artist', 
                 'genre']
         read_only_fields = [x for x in fields if x != 'image']
-#        read_only_fields = ['title', 
-#                'owner',
-#                'audio', 
-#                'duration', 
-#                'album_track_number', 
-#                'album_disc_number']
-
 
 
 # extend this and use in the later parts
@@ -139,10 +146,6 @@ class UserSerializer(DynamicFieldsModelSerializer):
                 'user_albums', 
                 'user_genres']
         read_only_fields = fields # might want to change later
-
-#        read_only_fields = ['username', 'user_tracks', 'user_artists', 'user_albums', 'user_genres']
-#                'user_folders', 
-#                'user_playlists', 
 
 
 

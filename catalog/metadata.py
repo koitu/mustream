@@ -2,6 +2,8 @@ from catalog.models import Album, Artist, Genre, Track
 from django.db import models
 import audio_metadata
 from django.dispatch import receiver
+from datetime import timedelta
+import os
 
 
 @receiver(models.signals.post_delete, sender=Track)
@@ -11,13 +13,11 @@ def delete_when_empty(sender, instance, **kwargs):
             instance.album.delete()
     except:
         pass
-
     try:
         if instance.artist.artist_tracks.count() == 0:
             instance.artist.delete()
     except:
         pass
-
     try:
         if instance.genre.genre_tracks.count() == 0:
             instance.genre.delete()
@@ -32,7 +32,7 @@ def get_or_create(queryset, name, model, owner):
             obj = queryset.get(name=name)
         except:
             obj = model(name=name, owner=owner)
-            album.save()
+            obj.save()
         finally:
             return obj
     return None
@@ -40,35 +40,33 @@ def get_or_create(queryset, name, model, owner):
 
 
 def create_track_from_file(file, owner):
-    if file.size > 2e8 # 200 mb is maxfilesize
+    # could move this block into views --------------------------
+    if file.size > 2e8: # 200 mb is maxfilesize
         return None
-
     filename, ext = os.path.splitext(os.path.basename(file.name))
     track = Track(title=filename, owner=owner, audio=file)
-    tempfile = TempFile(file=file)
-    tempfile.save()
-
     try:
-        metadata = audio_metadata.load(track.tempfile.file)
+        metadata = audio_metadata.load(file.temporary_file_path())
     except:
-        tempfile.delete()
         if ext in ('.flac', '.mp3', '.aac', '.ogg', '.opus', '.wav'):
-            # should also check if the file is playable
             return track
         return None
-    else:
-        tempfile.delete()
+    # and rename this to apply_metadata(track, file, owner) ----
+    # don't want to import audio_metadata into views tho
 
     try:
-        if metadata.tags.title:
-            title = metadata.tags.title[0]
+        if metadata.tags.title[0]:
+            track.title = metadata.tags.title[0]
     except:
         pass
+
     try:
         track.album = get_or_create(queryset=owner.user_albums.all(),
                 name=metadata.tags.album[0], model=Album, owner=owner)
         # also need to get track_number and disc number
-        # num, total = metadat.tags.discnumber[0].split('/')
+        # num, total = metadat.tags.discnumber[0].split('/') 
+        # sometimes metadata will use discnumber and disctotal
+        # num, total = metadata.tags.discnumber[0], metadata.tags.disctotal[0]
 
         # need to deal if adding file has the same name, artist, album (append id?)
         # image?
@@ -76,6 +74,7 @@ def create_track_from_file(file, owner):
         # will also need to update this when track is deleted
     except:
         pass
+
     try:
         track.artist = get_or_create(queryset=owner.user_artists.all(),
                 name=metadata.tags.artist[0], model=Artist, owner=owner)
@@ -86,16 +85,22 @@ def create_track_from_file(file, owner):
                 name=metadata.tags.genre[0], model=Genre, owner=owner)
     except:
         pass
+
     try:
-        track.duration = datetime.timedelta(seconds=round(metadata.streaminfo.duration))
+        track.duration = timedelta(seconds=round(metadata.streaminfo.duration))
     except:
         pass
 
+    # get track image
+
     return track
+
+# note: to get abs path of track
+# track.audio.path
 
 
 
 # def reset_db(User)
-#   delete current db ? # is it faster to compare diff and add/rm tracks/stuff or just wipe and genreate from files
+#   delete current db 
 #   for folder in user.userfolders
 #       scan_folder(folder)
