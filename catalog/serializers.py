@@ -30,6 +30,12 @@ class ListTrackSerializer(serializers.ModelSerializer):
         fields = ['id', 'title']
         read_only_fields = fields
 
+# might not need this because admin panel
+#class ListUserSerializer(serializers.ModelSerializer):
+#    class Meta:
+#        model = Track
+#        fields = ['id', 'username']
+#        read_only_fields = fields
 
 
 class AlbumSerializer(serializers.ModelSerializer):

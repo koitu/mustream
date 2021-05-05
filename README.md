@@ -1,6 +1,6 @@
 # mustream
 
-__Status:__ working but only able to upload 
+__Status:__ core functions are working
 
 ## Quickstart
 cd into the folder with manage.py 
@@ -23,10 +23,8 @@ Then vist http://127.0.0.1:8000/
 
 # To Do
 ## high priority
-- enable streaming
 - update permissions
 - extend User
-- api root
 - returning more metadata in TrackDetail
 - limit size of image and audio uploads (different limits for user and staff)
 
@@ -36,6 +34,7 @@ Then vist http://127.0.0.1:8000/
 - Web client
 - watch folder and automatically update database on file change
 - switch primary key from id to UUID (https://tech.serhatteker.com/post/2020-01/uuid-primary-key/)
+- download file https://stackoverflow.com/questions/2681338/django-serving-a-download-in-a-generic-view
 - multiple artist, album, genre per track (no promises for this)
 - limit for space each user can use
 

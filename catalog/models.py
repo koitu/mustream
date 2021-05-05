@@ -122,7 +122,7 @@ class Playlist(models.Model):
 # only staff can modify (normal users can updatedb to add tracks to db but only stuff can add other folders)
 class Folder(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_folders')
-    path = models.FileField()
+    # path = models.FileField() (correct field?)
 
 
 def user_path(instance, filename):
@@ -132,7 +132,8 @@ class UserSettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_settings', unique=True)
     shuffle = models.BooleanField(default=False)
     image = models.ImageField(upload_to=user_path, default='default_user.jpg')
-    # last played
     # play mode (what genre, artist, album, or all was being played)
     # public or private (default is private) (public will generate a public playlist with all songs)
+    # space used
+    # space limit
 
