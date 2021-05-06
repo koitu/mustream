@@ -1,16 +1,24 @@
 from django.db import models
+from django.contrib.admin.site import register
 from django.contrib.auth.models import User
 
 
 
-def album_path(instance, filename):
-    return '{0}/album_images/{1}-{2}'.format(instance.owner.username, instance.name, filename)
+def album_image_path(instance, filename):
+    filename, ext = os.path.splitext(os.path.basename(filename))
+    track = instance.album_tracks.first()
+    artist = track.artist if track.artist else "unknown_artist"
+    album = track.album if track.album else "unknown_album"
+    imagepath = '{0}/{1}/{2}/cover{3}'.format(instance.owner.username, artist, album, ext)
+    instance.album_tracks.update(image=imagepath)
+    return imagepath
 
 class Album(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_albums')
-    image = models.ImageField(upload_to=album_path, default='default_album.jpg')
-    # default image should be image used for its first track
+    image = models.ImageField(upload_to=album_image_path, default='default_album.jpg')
+    total_tracks = models.IntegerField(blank=True, null=True)
+    total_discs= models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -21,13 +29,13 @@ class Album(models.Model):
 
 
 
-def artist_path(instance, filename):
+def artist_image_path(instance, filename):
     return '{0}/artist_images/{1}-{2}'.format(instance.owner.username, instance.name, filename)
 
 class Artist(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_artists')
-    image = models.ImageField(upload_to=artist_path, default='default_artist.jpg')
+    image = models.ImageField(upload_to=artist_image_path, default='default_artist.jpg')
 
     def __str__(self):
         return self.name
@@ -38,13 +46,13 @@ class Artist(models.Model):
 
 
 
-def genre_path(instance, filename):
+def genre_image_path(instance, filename):
     return '{0}/genre_images/{1}-{2}'.format(instance.owner.username, instance.name, filename)
 
 class Genre(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_genres')
-    image = models.ImageField(upload_to=genre_path, default='default_genre.png')
+    image = models.ImageField(upload_to=genre_image_path, default='default_genre.png')
 
     def __str__(self):
         return self.name
@@ -58,15 +66,13 @@ class Genre(models.Model):
 def track_path(instance, filename):
     artist = instance.artist if instance.artist else "unknown_artist"
     album = instance.album if instance.album else "unknown_album"
-    # TODO: change formating?
     return '{0}/{1}/{2}/{3}'.format(instance.owner.username, artist, album, filename)
 
-# TODO: double check we have all the fields we need 
 class Track(models.Model):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_tracks')
-    image = models.ImageField(upload_to=track_path, default='default_track.jpg')
     audio = models.FileField(upload_to=track_path)
+    image = models.ImageField(default='default_track.jpg')
     duration = models.DurationField(blank=True, null=True)
     album_track_number = models.IntegerField(blank=True, null=True)
     album_disc_number = models.IntegerField(blank=True, null=True)
@@ -85,6 +91,9 @@ class Track(models.Model):
             null=True, 
             on_delete=models.CASCADE,
             related_name='artist_tracks')
+    # year
+    # date
+    # filesize
 
     def __str__(self):
         return self.title
@@ -94,9 +103,6 @@ class Track(models.Model):
         unique_together = [['title', 'owner'], ['album_track_number', 'album_disc_number', 'album']]
 
 
-class TempFile(models.Model):
-    file_src = models.FileField(upload_to='temp_files')
-
 
 # TODO:
 
@@ -104,7 +110,7 @@ class TempFile(models.Model):
 class Playlist(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_playlists')
     public = models.BooleanField(default=False)
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=120)
 #       tracks = models.ManyToManyField(
 #               Track,
 #               related_name='playlist_tracks'
@@ -137,3 +143,10 @@ class UserSettings(models.Model):
     # space used
     # space limit
 
+
+# register models into admin panel
+register(Album)
+register(Artist)
+register(Genre)
+register(Track)
+register(Playlist)

@@ -1,12 +1,16 @@
-from catalog.models import Album, Artist, Genre, Track
-from django.db import models
-import audio_metadata
+from django.db.models import signals
 from django.dispatch import receiver
+from django.core.files.temp import NamedTemporaryFile
+
+from catalog.models import Album, Artist, Genre, Track
+
 from datetime import timedelta
+import audio_metadata
+import mimetypes
 import os
 
 
-@receiver(models.signals.post_delete, sender=Track)
+@receiver(signals.post_delete, sender=Track)
 def delete_when_empty(sender, instance, **kwargs):
     try:
         if instance.album.album_tracks.count() == 0:
@@ -40,19 +44,14 @@ def get_or_create(queryset, name, model, owner):
 
 
 def create_track_from_file(file, owner):
-    # could move this block into views --------------------------
-    if file.size > 2e8: # 200 mb is maxfilesize
-        return None
     filename, ext = os.path.splitext(os.path.basename(file.name))
     track = Track(title=filename, owner=owner, audio=file)
     try:
         metadata = audio_metadata.load(file.temporary_file_path())
     except:
-        if ext in ('.flac', '.mp3', '.aac', '.ogg', '.opus', '.wav'):
+        if ext in ('.flac', '.mp3', '.aac', '.ogg', '.wav'): # .opus
             return track
         return None
-    # and rename this to apply_metadata(track, file, owner) ----
-    # don't want to import audio_metadata into views tho
 
     try:
         if metadata.tags.title[0]:
@@ -61,28 +60,34 @@ def create_track_from_file(file, owner):
         pass
 
     try:
-        track.album = get_or_create(queryset=owner.user_albums.all(),
-                name=metadata.tags.album[0], model=Album, owner=owner)
-        # also need to get track_number and disc number
-        # num, total = metadat.tags.discnumber[0].split('/') 
-        # sometimes metadata will use discnumber and disctotal
-        # num, total = metadata.tags.discnumber[0], metadata.tags.disctotal[0]
-
-        # need to deal if adding file has the same name, artist, album (append id?)
-        # image?
-        # if track.album is using default_image and track has a image then album.image=track.image
-        # will also need to update this when track is deleted
+        track.genre = get_or_create(queryset=owner.user_genres.all(),
+                name=metadata.tags.genre[0], model=Genre, owner=owner)
     except:
         pass
-
     try:
         track.artist = get_or_create(queryset=owner.user_artists.all(),
                 name=metadata.tags.artist[0], model=Artist, owner=owner)
     except:
         pass
+
     try:
-        track.genre = get_or_create(queryset=owner.user_genres.all(),
-                name=metadata.tags.genre[0], model=Genre, owner=owner)
+        track.album = get_or_create(queryset=owner.user_albums.all(),
+                name=metadata.tags.album[0], model=Album, owner=owner)
+        if track.album.image == Album._meta.get_field('image').get_default():
+            try:
+                with NamedTemporaryFile(suffix=guess_extension(metadata.pictures[0].mime_type)) as temp:
+                    temp.write(metadata.pictures[0].data)
+                    track.album.image = temp
+                    track.album.save()
+            except:
+                pass
+        else:
+            track.image = track.album.image
+
+        # also need to get track_number and disc number
+        # num, total = metadat.tags.discnumber[0].split('/') 
+        # sometimes metadata will use discnumber and disctotal
+        # num, total = metadata.tags.discnumber[0], metadata.tags.disctotal[0]
     except:
         pass
 
@@ -91,15 +96,12 @@ def create_track_from_file(file, owner):
     except:
         pass
 
-    # get track image
-
     return track
 
-# note: to get abs path of track
-# track.audio.path
 
 
 
+# when looking through files will probably find a image maned cover or image 
 # def reset_db(User)
 #   delete current db 
 #   for folder in user.userfolders

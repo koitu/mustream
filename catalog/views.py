@@ -1,21 +1,20 @@
+from rest_framework import generics, mixins, permissions, status
 from rest_framework.views import APIView
-from rest_framework.reverse import reverse, reverse_lazy
+from rest_framework.reverse import reverse
 from rest_framework.response import Response
-from rest_framework import generics, mixins, permissions, status, parsers
-from catalog.permissions import IsOwner, IsOwnerOrIsPublic
+
 from django.http import Http404, HttpResponse
 from django.core.exceptions import ValidationError
-
-from django.core.files.uploadhandler import TemporaryFileUploadHandler
 from django.contrib.auth.models import User
-from catalog.models import Album, Artist, Genre, Track, Playlist, Folder
-from catalog import serializers
+from django.core.files.uploadhandler import TemporaryFileUploadHandler
 
+from catalog import serializers
+from catalog.models import Album, Artist, Genre, Track, Playlist, Folder
 from catalog.metadata import create_track_from_file
-from rest_framework.parsers import MultiPartParser
+from catalog.permissions import IsOwner, IsOwnerOrIsPublic
+
 import mimetypes
 import os
-
 
 # update permissions.py (might be broken right now)
 # also make sure that permissions line up with expected behaviour
@@ -25,10 +24,10 @@ import os
 class APIRoot(APIView):
     def get(self, request):
         return Response({
-            'tracks': reverse_lazy('track-list', request=request),
-            'albums': reverse_lazy('album-list', request=request),
-            'artists': reverse_lazy('artist-list', request=request),
-            'genres': reverse_lazy('genre-list', request=request),
+            'tracks': reverse('track-list', request=request),
+            'albums': reverse('album-list', request=request),
+            'artists': reverse('artist-list', request=request),
+            'genres': reverse('genre-list', request=request),
             #'playlists': reverse_lazy('playlist-list', request=request)
         })
 
@@ -88,7 +87,6 @@ class GenreDetail(generics.RetrieveUpdateAPIView):
 class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = serializers.ListTrackSerializer
-    parser_classes = (MultiPartParser,) # limits what can be submitted?
 
     def get_queryset(self):
         return Track.objects.filter(owner=self.request.user)
@@ -102,7 +100,8 @@ class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
 
     def put(self, request, format=None):
         try:
-            # request.data['file'] seems to do the same thing
+            if request.FILES['file'].size > 2e8:
+                return Response(status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
             track = create_track_from_file(request.FILES['file'], request.user)
             if track:
                 track.validate_unique()
@@ -128,19 +127,21 @@ class TrackDetail(generics.RetrieveDestroyAPIView):
     serializer_class = serializers.TrackSerializer
 
 
+
 # playback of album/genre/playlist/tracks will be handled with js
 # another option would be to return a url to a suitable next track based on playing album/artist/genre/playlist/all tracks and shuffle mode
 # how to prevent repeating tracks when listening to album on shuffle
 # another option would be a route that returns a random track from album/artist/genre/playlist/all tracks
 # could load a rnadom subset of tracks in the user based on type of play that he user wants and another view will pop the tracks
-# api/tracks/<pk>/stream
+# api/tracks/<pk>/stream/
 class StreamTrack(APIView):
     permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
 
     def get(self, request, pk, *args, **kwargs):
         try:
             path = Track.objects.get(pk=pk).audio.path
-            response = HttpResponse(open(path, 'rb'))
+            with open(path, 'rb') as file:
+                response = HttpResponse(file)
             response['Content-Type'] = mimetypes.guess_type(path)[0]
             response['Content-Disposition'] = "attachment; filename=%s" % (os.path.basename(path).replace(' ', '-'))
             response['Content-Length'] = os.path.getsize(path)
@@ -151,35 +152,6 @@ class StreamTrack(APIView):
         except Exception as e:
             print(e)
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-# /users/ 
-# (admin only) list or create a new user
-class UserList(APIView):
-    permission_classes = [permissions.IsAdminUser]
-
-    def get(self, request, format=None):
-        users = User.object.all()
-        serializer = Userserializer(users, many=True, fields=('id', 'username'))
-        return Response(serializer.data)
-
-    # what to do when user already exists? (how to update user?)
-    def post(self, request, format=None):
-        serializer = serializers.UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-# /users/id/
-# (admin and user only) get info/update/destroy a user
-class UserDetail(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAdminUser]
-    queryset = User.objects.all()
-    serializer_class = serializers.UserSerializer
-
 
 
 # TODO: will implement sharing via playlists

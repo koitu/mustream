@@ -25,11 +25,13 @@ Then vist http://127.0.0.1:8000/
 ## high priority
 - update permissions
 - extend User
-- returning more metadata in TrackDetail
+- get techinial metadata (not part of a model?)
 - limit size of image and audio uploads (different limits for user and staff)
 
 ## med priority
 - pagementation
+- custom login and logout (https://github.com/encode/django-rest-framework/blob/master/rest_framework/urls.py)
+- limit buffer and preload next track
 - caching
 - Web client
 - watch folder and automatically update database on file change
