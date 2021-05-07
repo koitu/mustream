@@ -107,18 +107,15 @@ class Track(models.Model):
 
 
 
-# TODO:
 
 class Playlist(models.Model):
+    name = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_playlists')
     public = models.BooleanField(default=False)
-    name = models.CharField(max_length=120)
-#       tracks = models.ManyToManyField(
-#               Track,
-#               related_name='playlist_tracks'
-#       )
-#       # add genre/album/artist/folder to playlist ?
-#       # if added fields for genre/album/artist/folder how to deal with overlapping tracks ?
+    tracks = models.ManyToManyField(
+            Track,
+            related_name='track_playlists'
+    )
 
     def __str__(self):
         return self.name
@@ -127,20 +124,21 @@ class Playlist(models.Model):
         ordering = ['name', 'id'] 
 
 
+def user_image_path(instance, filename):
+    file, ext = os.path.splitext(os.path.basename(filename))
+    return '{0}/user{1}'.format(instance.user.username, ext)
 
-
-def user_path(instance, filename):
-    return '{0}/{1}'.format(instance.user.username, filename)
-
-class UserSettings(models.Model):
+class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_settings', unique=True)
+    image = models.ImageField(upload_to=user_image_path, default='default_user.jpg')
     shuffle = models.BooleanField(default=False)
-    image = models.ImageField(upload_to=user_path, default='default_user.jpg')
-    # play mode (what genre, artist, album, or all was being played)
+    current_track = models.IntegerField() # pk of the track
     # public or private (default is private) (public will generate a public playlist with all songs)
     # space used
     # space limit
 
+# track_presave() signal check if within storage limit for user and return response is so
+# else update space used
 
 # register models into admin panel
 register(Album)
@@ -148,11 +146,3 @@ register(Artist)
 register(Genre)
 register(Track)
 register(Playlist)
-
-
-# Basic model for adding folders to monitor
-
-#   # only staff can modify (normal users can updatedb to add tracks to db but only stuff can add other folders)
-#   class Folder(models.Model):
-#       owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_folders')
-#       # path = models.FilePathField() (correct field?)

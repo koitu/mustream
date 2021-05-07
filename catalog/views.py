@@ -16,9 +16,6 @@ from catalog.permissions import IsOwner, IsOwnerOrIsPublic
 import mimetypes
 import os
 
-# update permissions.py (might be broken right now)
-# also make sure that permissions line up with expected behaviour
-
 
 # api/
 class APIRoot(APIView):
@@ -28,7 +25,7 @@ class APIRoot(APIView):
             'albums': reverse('album-list', request=request),
             'artists': reverse('artist-list', request=request),
             'genres': reverse('genre-list', request=request),
-            #'playlists': reverse_lazy('playlist-list', request=request)
+            'playlists': reverse('playlist-list', request=request)
         })
 
 
@@ -59,26 +56,21 @@ class GenreList(generics.ListAPIView):
            return Genre.objects.filter(owner=self.request.user)
 
 
-
-# TODO: add deletion by album/artist/genre 
-# generics.RetrieveUpdateDestroyAPIView
-# if this doesn't work properly might have to create ImageAlbumSerializer, api/albums/<pk>/update_cover
-
 # api/albums/<pk>/ 
-class AlbumDetail(generics.RetrieveUpdateAPIView):
-       permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+class AlbumDetail(generics.RetrieveUpdateDestroyAPIView):
+       permission_classes = [IsOwner] 
        queryset = Album.objects.all()
        serializer_class = serializers.AlbumSerializer
 
 # api/artists/<pk>/
-class ArtistDetail(generics.RetrieveUpdateAPIView):
-       permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+class ArtistDetail(generics.RetrieveUpdateDestroyAPIView):
+       permission_classes = [IsOwner] 
        queryset = Artist.objects.all()
        serializer_class = serializers.ArtistSerializer
 
 # api/genres/<pk>/
-class GenreDetail(generics.RetrieveUpdateAPIView):
-       permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+class GenreDetail(generics.RetrieveUpdateDestroyAPIView):
+       permission_classes = [IsOwner] 
        queryset = Genre.objects.all()
        serializer_class = serializers.GenreSerializer
 
@@ -119,23 +111,16 @@ class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
         return self.put(request, format=format)
 
 
-
 # api/tracks/<pk>/
 class TrackDetail(generics.RetrieveDestroyAPIView):
-    permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+    permission_classes = [IsOwner] 
     queryset = Track.objects.all()
     serializer_class = serializers.TrackSerializer
 
 
-
-# playback of album/genre/playlist/tracks will be handled with js
-# another option would be to return a url to a suitable next track based on playing album/artist/genre/playlist/all tracks and shuffle mode
-# how to prevent repeating tracks when listening to album on shuffle
-# another option would be a route that returns a random track from album/artist/genre/playlist/all tracks
-# could load a rnadom subset of tracks in the user based on type of play that he user wants and another view will pop the tracks
 # api/tracks/<pk>/stream/
 class StreamTrack(APIView):
-    permission_classes = [IsOwner] # IsOwnerOrInPublicPlaylist
+    permission_classes = [IsOwner] 
 
     def get(self, request, pk, *args, **kwargs):
         try:
@@ -154,30 +139,86 @@ class StreamTrack(APIView):
         return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# TODO: will implement sharing via playlists
-# /playlists/
-# get: list playlists that the user owns
-# put/post?: create a new empty playlist
+# api/playlists/
+class PlaylistList(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.PlaylistSerializer
 
-# /playlists/id/
-# get: list genres, albums, artists, and tracks added to playlist
-# put/post/patch?: add genres, albums, artists, and tracks to playlist (by id) (only the ones that the user owns for now)
+    def get_queryset(self):
+        return Playlist.objects.filter(owner=self.request.user)
 
-# /playlists/id/stream/
-# play playlist (how to play song selected?)
+# api/playlists/<pk>/
+class PlaylistDetail(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsOwnerOrIsPublic] 
+    queryset = Playlist.objects.all()
+    serializer_class = serializers.PlaylistSerializer
 
-# note that the genres, albums, artists, and tracks can be looked at by using the other api things
+# api/playlists/<pk>/tracks/
+class PlaylistDetail(generics.ListAPIView):
+    permission_class = [IsOwnerOrIsPublic]
+    queryset = PlayList.objects.all()
+    serializer_class = serializers.PlaylistTrackSerializer
 
-# class PlaylistList(generics.ListCreateAPIView):
-#     permission_classes = [OtherPermissions]
-#     queryset = Playlist.objects.all()
-#     serializer_class = serializers.PlaylistSerializer
-# 
-#     def perform_create(self, serializer):
-#         serializer.save(owner=self.request.user)
-# 
-# 
-# class PlaylistDetail(generics.RetrieveUpdateDestroyAPIView):
-#     permission_classes = [OtherPermissions]
-#     queryset = Playlist.objects.all()
-#     serializer_class = serializers.PlaylistSerializer
+
+
+
+# api/playlists/<pk_pk>/tracks/<pk>/
+class PlaylistTrack(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_playlist(self, pk):
+        try:
+            return Playlist.objects.get(pk=pk)
+        except Playlist.DoesNotExist:
+            raise Http404
+    
+    def get_track(self, pk):
+        try:
+            return Track.objects.get(pk=pk)
+        except:
+            Track.DoesNotExist:
+        raise Http404
+
+    def get(self, request, pk, list_pk, *args, **kwargs):
+        playlist = self.get_playlist(pk=list_pk)
+        if playlist.public or playlist.owner == request.user:
+            try:
+                serializer = TrackSerializer(playlist.tracks.get(pk=pk))
+                return Response(serializer.data)
+            except:
+                raise Http404
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def post(self, request, pk, list_pk, *args, **kwargs):
+        playlist = self.get_playlist(pk=pl_pk)
+        if playlist.owner == request.user:
+            track = self.get_track(pk=pk)
+            if track.owner == request.user:
+                playlist.tracks.add(track)
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def put(self, request, pk, list_pk, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
+
+    def delete(self, request, pk, list_pk, *args, **kwargs):
+        playlist = self.get_playlist(pk=pl_pk)
+        if playlist.owner == request.user:
+            track = self.get_track(pk=pk)
+            if track.owner == request.user:
+                playlist.tracks.remove(track)
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+
+# api/playlists/<pk_pk>/tracks/<pk>/stream/
+class StreamPlaylistTrack(StreamTrack):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk, list_pk, *args, **kwargs):
+        try:
+            playlist = Playlist.objects.get(pk=list_pk)
+        except Playlist.DoesNotExist:
+            raise Http404
+        if playlist.public or playlist.owner == request.user:
+            return super().get(request, pk, *args, **kwargs)
+        return Response(status=status.HTTP_403_FORBIDDEN)

@@ -30,13 +30,6 @@ class ListTrackSerializer(serializers.ModelSerializer):
         fields = ['id', 'title']
         read_only_fields = fields
 
-# might not need this because admin panel
-#class ListUserSerializer(serializers.ModelSerializer):
-#    class Meta:
-#        model = Track
-#        fields = ['id', 'username']
-#        read_only_fields = fields
-
 
 class AlbumSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username')
@@ -51,7 +44,6 @@ class AlbumSerializer(serializers.ModelSerializer):
                 'album_tracks']
         read_only_fields = [x for x in fields if x != 'image']
 
-
 class ArtistSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username')
     artist_tracks = ListTrackSerializer(many=True)
@@ -64,7 +56,6 @@ class ArtistSerializer(serializers.ModelSerializer):
                 'image',
                 'artist_tracks']
         read_only_fields = [x for x in fields if x != 'image']
-
 
 class GenreSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source='owner.username')
@@ -82,27 +73,20 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 
+# TODO:
 
 class DynamicFieldsModelSerializer(serializers.ModelSerializer):
     """
     adds `fields` argument that controls which fields should be displayed
     """
-
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop('fields', None)
-
         super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
-
         if fields is not None:
             allowed = set(fields)
             existing = set(self.fields)
             for field_name in existing - allowed:
                 self.fields.pop(field_name)
-
-
-
-# if id is set on model/database level we might not need it for some serializers
-
 
 
 # used for the header with music controls
@@ -136,26 +120,23 @@ class TrackSerializer(DynamicFieldsModelSerializer):
         read_only_fields = [x for x in fields if x != 'image']
 
 
-# extend this and use in the later parts
-class UserSerializer(DynamicFieldsModelSerializer):
-    user_tracks = ListTrackSerializer(many=True)
-    user_albums = ListAlbumSerializer(many=True)
-    user_artists = ListArtistSerializer(many=True)
-    user_genres = ListGenreSerializer(many=True)
+class UserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
 
     class Meta:
-        model = User
-        fields = ['id', 
-                'username', 
-                'user_tracks', 
-                'user_artists',
-                'user_albums', 
-                'user_genres']
-        read_only_fields = fields # might want to change later
+        model = UserProfile
+        fields = ['id',
+                'username',
+                'image',
+                'shuffle',
+                'current_track'
+#                'saved_playlists'
+                ]
+        read_only_fields = ['id', 
+                'username'
+#                'saved_playlists'
+                ]
 
-
-
-# TODO:
 
 class PlaylistSerializer(DynamicFieldsModelSerializer):
     owner = serializers.CharField(source='owner.username')
@@ -163,18 +144,14 @@ class PlaylistSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Playlist
         fields = ['id', 
-                'owner', 
-                'public',
                 'name', 
-                'tracks']
+                'owner', 
+                'public']
+        read_only_fields = ['id', 'owner']
 
-
-
-class FolderSerializer(DynamicFieldsModelSerializer):
-    owner = serializers.CharField(source='owner.username')
+class PlaylistTracksSerializer(DynamicFieldsModelSerializer):
+    tracks = serializers.ListTrackSerializer(many=True)
 
     class Meta:
-        model = Folder
-        fields = ['id', 
-                'owner',
-                'path']
+        model = Playlist
+        fields = ['tracks']
