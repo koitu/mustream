@@ -52,13 +52,11 @@ def create_track_from_file(file, owner):
         if ext in ('.flac', '.mp3', '.aac', '.ogg', '.wav'): # .opus
             return track
         return None
-
     try:
         if metadata.tags.title[0]:
             track.title = metadata.tags.title[0]
     except:
         pass
-
     try:
         track.genre = get_or_create(queryset=owner.user_genres.all(),
                 name=metadata.tags.genre[0], model=Genre, owner=owner)
@@ -69,30 +67,66 @@ def create_track_from_file(file, owner):
                 name=metadata.tags.artist[0], model=Artist, owner=owner)
     except:
         pass
-
     try:
         track.album = get_or_create(queryset=owner.user_albums.all(),
                 name=metadata.tags.album[0], model=Album, owner=owner)
+
         if track.album.image == Album._meta.get_field('image').get_default():
             try:
                 with NamedTemporaryFile(suffix=guess_extension(metadata.pictures[0].mime_type)) as temp:
                     temp.write(metadata.pictures[0].data)
                     track.album.image = temp
                     track.album.save()
+                    track.image = track.album.image
             except:
                 pass
         else:
             track.image = track.album.image
 
-        # also need to get track_number and disc number
-        # num, total = metadat.tags.discnumber[0].split('/') 
-        # sometimes metadata will use discnumber and disctotal
-        # num, total = metadata.tags.discnumber[0], metadata.tags.disctotal[0]
+        try:
+            tracknum = metadata.tags.tracknumber[0]
+            if discnum.find('/') != -1:
+                num, total = discnum.split('/')
+                track.album_track_number = int(num)
+                track.album_total_tracks = int(total)
+            else:
+                track.album_track_number = int(discnum)
+                try:
+                    track.album_total_tracks = int(metadata.tags.tracktotal[0])
+                except:
+                    track.album_total_tracks = int(metadata.tags.totaltracks[0])
+        except:
+            pass
+        try:
+            discnum = metadata.tags.discnumber[0]
+            if discnum.find('/') != -1:
+                num, total = discnum.split('/')
+                track.album_disc_number = int(num)
+                track.album_total_discs = int(total)
+            else:
+                track.album_disc_number = int(discnum)
+                try:
+                    track.album_total_discs = int(metadata.tags.disctotal[0])
+                except:
+                    track.album_total_discs = int(metadata.tags.totaldiscs[0])
+        except:
+            pass
     except:
-        pass
-
+        try:
+            with NamedTemporaryFile(suffix=guess_extension(metadata.pictures[0].mime_type)) as temp:
+                temp.write(metadata.pictures[0].data)
+                track.image = temp
+                track.save()
+        except:
+            pass
     try:
         track.duration = timedelta(seconds=round(metadata.streaminfo.duration))
+    except:
+        pass
+    try:
+        for s in metadata.tags.date[0].replace('/','.').split('.'):
+            if len(s) == 4:
+                track.year = int(s)
     except:
         pass
 

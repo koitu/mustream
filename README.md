@@ -22,6 +22,7 @@ Then vist http://127.0.0.1:8000/
 - audio-metadata
 
 # To Do
+- Web client
 ## high priority
 - update permissions
 - extend User
@@ -30,16 +31,18 @@ Then vist http://127.0.0.1:8000/
 
 ## med priority
 - pagementation
+- limit for space each user can use
 - custom login and logout (https://github.com/encode/django-rest-framework/blob/master/rest_framework/urls.py)
-- limit buffer and preload next track
-- caching
-- Web client
 - watch folder and automatically update database on file change
+	- might need to rewrite models with (https://www.geeksforgeeks.org/filepathfield-django-models/)
+	- another way could be to change the upload to locations instead
+	- would also need to serve file (how to design url?)
+	- how to secure this? (write a second app to serve files?)
 - switch primary key from id to UUID (https://tech.serhatteker.com/post/2020-01/uuid-primary-key/)
 - download file https://stackoverflow.com/questions/2681338/django-serving-a-download-in-a-generic-view
-- multiple artist, album, genre per track (no promises for this)
-- limit for space each user can use
+- add support for track to belong to multiple genres (and maybe artists) (but not albums)
 
 ## low priority
-- cli client (?)
+- cli client
 - add youtube playlists and server will autodl
+
