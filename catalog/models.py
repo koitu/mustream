@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.admin.site import register
 from django.contrib.auth.models import User
 
 
@@ -16,7 +15,7 @@ def album_image_path(instance, filename):
 class Album(models.Model):
     name = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_albums')
-    image = models.ImageField(upload_to=album_image_path, default='default_album.jpg')
+    image = models.ImageField(upload_to=album_image_path, default='default_album.png')
 
     def __str__(self):
         return self.name
@@ -33,7 +32,7 @@ def artist_image_path(instance, filename):
 class Artist(models.Model):
     name = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_artists')
-    image = models.ImageField(upload_to=artist_image_path, default='default_artist.jpg')
+    image = models.ImageField(upload_to=artist_image_path, default='default_artist.png')
 
     def __str__(self):
         return self.name
@@ -75,7 +74,7 @@ class Track(models.Model):
     title = models.CharField(max_length=120)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_tracks')
     audio = models.FileField(upload_to=track_path) # track.audio.size will return filesize
-    image = models.ImageField(upload_to=track_image_path, default='default_track.jpg')
+    image = models.ImageField(upload_to=track_image_path, default='default_track.png')
     duration = models.DurationField(blank=True, null=True)
     album = models.ForeignKey(Album, 
             blank=True, 
@@ -122,6 +121,7 @@ class Playlist(models.Model):
 
     class Meta:
         ordering = ['name', 'id'] 
+        unique_together = ['name', 'owner']
 
 
 def user_image_path(instance, filename):
@@ -130,7 +130,7 @@ def user_image_path(instance, filename):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_settings', unique=True)
-    image = models.ImageField(upload_to=user_image_path, default='default_user.jpg')
+    image = models.ImageField(upload_to=user_image_path, default='default_user.png')
     shuffle = models.BooleanField(default=False)
     current_track = models.IntegerField() # pk of the track
     # public or private (default is private) (public will generate a public playlist with all songs)
@@ -141,8 +141,8 @@ class UserProfile(models.Model):
 # else update space used
 
 # register models into admin panel
-register(Album)
-register(Artist)
-register(Genre)
-register(Track)
-register(Playlist)
+#register(Album)
+#register(Artist)
+#register(Genre)
+#register(Track)
+#register(Playlist)

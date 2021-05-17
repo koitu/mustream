@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadhandler import TemporaryFileUploadHandler
 
 from catalog import serializers
-from catalog.models import Album, Artist, Genre, Track, Playlist, Folder
+from catalog.models import Album, Artist, Genre, Track, Playlist
 from catalog.metadata import create_track_from_file
 from catalog.permissions import IsOwner, IsOwnerOrIsPublic
 
@@ -156,7 +156,7 @@ class PlaylistDetail(generics.RetrieveUpdateDestroyAPIView):
 # api/playlists/<pk>/tracks/
 class PlaylistDetail(generics.ListAPIView):
     permission_class = [IsOwnerOrIsPublic]
-    queryset = PlayList.objects.all()
+    queryset = Playlist.objects.all()
     serializer_class = serializers.PlaylistTrackSerializer
 
 
@@ -175,9 +175,8 @@ class PlaylistTrack(APIView):
     def get_track(self, pk):
         try:
             return Track.objects.get(pk=pk)
-        except:
-            Track.DoesNotExist:
-        raise Http404
+        except Track.DoesNotExist:
+            raise Http404
 
     def get(self, request, pk, list_pk, *args, **kwargs):
         playlist = self.get_playlist(pk=list_pk)

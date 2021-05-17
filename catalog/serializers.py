@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from catalog.models import Artist, Album, Genre, Track, Playlist, Folder
+from catalog.models import Artist, Album, Genre, Track, Playlist, UserProfile
 from django.contrib.auth.models import User
 
 
@@ -149,8 +149,8 @@ class PlaylistSerializer(DynamicFieldsModelSerializer):
                 'public']
         read_only_fields = ['id', 'owner']
 
-class PlaylistTracksSerializer(DynamicFieldsModelSerializer):
-    tracks = serializers.ListTrackSerializer(many=True)
+class PlaylistTrackSerializer(DynamicFieldsModelSerializer):
+    tracks = ListTrackSerializer(many=True)
 
     class Meta:
         model = Playlist
