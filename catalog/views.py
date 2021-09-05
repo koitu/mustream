@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from django.http import Http404, HttpResponse
 from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from django.core.files.uploadhandler import TemporaryFileUploadHandler
 
 from catalog import serializers
