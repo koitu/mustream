@@ -31,49 +31,50 @@ class APIRoot(APIView):
 
 # api/albums/ 
 class AlbumList(generics.ListAPIView):
-       permission_classes = [permissions.IsAuthenticated]
-       serializer_class = serializers.ListAlbumSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.ListAlbumSerializer
 
-       def get_queryset(self):
-           return Album.objects.filter(owner=self.request.user)
+    def get_queryset(self):
+        return Album.objects.filter(owner=self.request.user)
 
 
 # api/artists/ 
 class ArtistList(generics.ListAPIView):
-       permission_classes = [permissions.IsAuthenticated]
-       serializer_class = serializers.ListArtistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.ListArtistSerializer
 
-       def get_queryset(self):
-           return Artist.objects.filter(owner=self.request.user)
+    def get_queryset(self):
+        return Artist.objects.filter(owner=self.request.user)
 
 
 # api/genres/ 
 class GenreList(generics.ListAPIView):
-       permission_classes = [permissions.IsAuthenticated]
-       serializer_class = serializers.ListGenreSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.ListGenreSerializer
 
-       def get_queryset(self):
-           return Genre.objects.filter(owner=self.request.user)
+    def get_queryset(self):
+        return Genre.objects.filter(owner=self.request.user)
 
 
 # api/albums/<pk>/ 
 class AlbumDetail(generics.RetrieveUpdateDestroyAPIView):
-       permission_classes = [IsOwner] 
-       queryset = Album.objects.all()
-       serializer_class = serializers.AlbumSerializer
+    permission_classes = [IsOwner]
+    queryset = Album.objects.all()
+    serializer_class = serializers.AlbumSerializer
+
 
 # api/artists/<pk>/
 class ArtistDetail(generics.RetrieveUpdateDestroyAPIView):
-       permission_classes = [IsOwner] 
-       queryset = Artist.objects.all()
-       serializer_class = serializers.ArtistSerializer
+    permission_classes = [IsOwner]
+    queryset = Artist.objects.all()
+    serializer_class = serializers.ArtistSerializer
+
 
 # api/genres/<pk>/
 class GenreDetail(generics.RetrieveUpdateDestroyAPIView):
-       permission_classes = [IsOwner] 
-       queryset = Genre.objects.all()
-       serializer_class = serializers.GenreSerializer
-
+    permission_classes = [IsOwner]
+    queryset = Genre.objects.all()
+    serializer_class = serializers.GenreSerializer
 
 
 class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
@@ -84,7 +85,7 @@ class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
         return Track.objects.filter(owner=self.request.user)
 
     def initialize_request(self, request, *args, **kwargs):
-        request.upload_handlers = [TemporaryFileUploadHandler(request)] 
+        request.upload_handlers = [TemporaryFileUploadHandler(request)]
         return super().initialize_request(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
@@ -98,14 +99,14 @@ class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
             if track:
                 track.validate_unique()
                 track.save()
-                return Response(status=status.HTTP_201_CREATED) 
-            return Response(status=status.HTTP_400_BAD_REQUEST) 
+                return Response(status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
             print(e)
-            return Response(status=status.HTTP_409_CONFLICT) 
+            return Response(status=status.HTTP_409_CONFLICT)
         except Exception as e:
             print(e)
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, format=None):
         return self.put(request, format=format)
@@ -113,14 +114,14 @@ class TrackList(mixins.ListModelMixin, generics.GenericAPIView):
 
 # api/tracks/<pk>/
 class TrackDetail(generics.RetrieveDestroyAPIView):
-    permission_classes = [IsOwner] 
+    permission_classes = [IsOwner]
     queryset = Track.objects.all()
     serializer_class = serializers.TrackSerializer
 
 
 # api/tracks/<pk>/stream/
 class StreamTrack(APIView):
-    permission_classes = [IsOwner] 
+    permission_classes = [IsOwner]
 
     def get(self, request, pk, *args, **kwargs):
         try:
@@ -147,19 +148,19 @@ class PlaylistList(generics.ListCreateAPIView):
     def get_queryset(self):
         return Playlist.objects.filter(owner=self.request.user)
 
+
 # api/playlists/<pk>/
 class PlaylistDetail(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsOwnerOrIsPublic] 
+    permission_classes = [IsOwnerOrIsPublic]
     queryset = Playlist.objects.all()
     serializer_class = serializers.PlaylistSerializer
+
 
 # api/playlists/<pk>/tracks/
 class PlaylistDetail(generics.ListAPIView):
     permission_class = [IsOwnerOrIsPublic]
     queryset = Playlist.objects.all()
     serializer_class = serializers.PlaylistTrackSerializer
-
-
 
 
 # api/playlists/<pk_pk>/tracks/<pk>/
@@ -171,7 +172,7 @@ class PlaylistTrack(APIView):
             return Playlist.objects.get(pk=pk)
         except Playlist.DoesNotExist:
             raise Http404
-    
+
     def get_track(self, pk):
         try:
             return Track.objects.get(pk=pk)
@@ -182,14 +183,14 @@ class PlaylistTrack(APIView):
         playlist = self.get_playlist(pk=list_pk)
         if playlist.public or playlist.owner == request.user:
             try:
-                serializer = TrackSerializer(playlist.tracks.get(pk=pk))
+                serializer = serializers.TrackSerializer(playlist.tracks.get(pk=pk))
                 return Response(serializer.data)
             except:
                 raise Http404
         return Response(status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request, pk, list_pk, *args, **kwargs):
-        playlist = self.get_playlist(pk=pl_pk)
+        playlist = self.get_playlist(pk=list_pk)
         if playlist.owner == request.user:
             track = self.get_track(pk=pk)
             if track.owner == request.user:
@@ -200,13 +201,12 @@ class PlaylistTrack(APIView):
         return self.post(request, *args, **kwargs)
 
     def delete(self, request, pk, list_pk, *args, **kwargs):
-        playlist = self.get_playlist(pk=pl_pk)
+        playlist = self.get_playlist(pk=list_pk)
         if playlist.owner == request.user:
             track = self.get_track(pk=pk)
             if track.owner == request.user:
                 playlist.tracks.remove(track)
         return Response(status=status.HTTP_403_FORBIDDEN)
-
 
 
 # api/playlists/<pk_pk>/tracks/<pk>/stream/

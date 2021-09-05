@@ -17,11 +17,13 @@ def delete_when_empty(sender, instance, **kwargs):
             instance.album.delete()
     except:
         pass
+
     try:
         if instance.artist.artist_tracks.count() == 0:
             instance.artist.delete()
     except:
         pass
+
     try:
         if instance.genre.genre_tracks.count() == 0:
             instance.genre.delete()
@@ -29,18 +31,15 @@ def delete_when_empty(sender, instance, **kwargs):
         pass
 
 
-
 def get_or_create(queryset, name, model, owner):
+    obj = None
     if name:
         try:
             obj = queryset.get(name=name)
         except:
             obj = model(name=name, owner=owner)
             obj.save()
-        finally:
-            return obj
-    return None
-
+    return obj
 
 
 def create_track_from_file(file, owner):
@@ -49,31 +48,47 @@ def create_track_from_file(file, owner):
     try:
         metadata = audio_metadata.load(file.temporary_file_path())
     except:
-        if ext in ('.flac', '.mp3', '.aac', '.ogg', '.wav'): # .opus
+        if ext in ('.flac', '.mp3', '.aac', '.ogg', '.wav'):  # .opus
             return track
         return None
+
     try:
         if metadata.tags.title[0]:
             track.title = metadata.tags.title[0]
     except:
         pass
+
     try:
-        track.genre = get_or_create(queryset=owner.user_genres.all(),
-                name=metadata.tags.genre[0], model=Genre, owner=owner)
+        track.genre = get_or_create(
+            queryset=owner.user_genres.all(),
+            name=metadata.tags.genre[0],
+            model=Genre,
+            owner=owner,
+        )
     except:
         pass
+
     try:
-        track.artist = get_or_create(queryset=owner.user_artists.all(),
-                name=metadata.tags.artist[0], model=Artist, owner=owner)
+        track.artist = get_or_create(
+            queryset=owner.user_artists.all(),
+            name=metadata.tags.artist[0],
+            model=Artist,
+            owner=owner,
+        )
     except:
         pass
+
     try:
-        track.album = get_or_create(queryset=owner.user_albums.all(),
-                name=metadata.tags.album[0], model=Album, owner=owner)
+        track.album = get_or_create(
+            queryset=owner.user_albums.all(),
+            name=metadata.tags.album[0],
+            model=Album,
+            owner=owner,
+        )
 
         if track.album.image == Album._meta.get_field('image').get_default():
             try:
-                with NamedTemporaryFile(suffix=guess_extension(metadata.pictures[0].mime_type)) as temp:
+                with NamedTemporaryFile(suffix=mimetypes.guess_extension(metadata.pictures[0].mime_type)) as temp:
                     temp.write(metadata.pictures[0].data)
                     track.album.image = temp
                     track.album.save()
@@ -85,18 +100,19 @@ def create_track_from_file(file, owner):
 
         try:
             tracknum = metadata.tags.tracknumber[0]
-            if discnum.find('/') != -1:
-                num, total = discnum.split('/')
+            if tracknum.find('/') != -1:
+                num, total = tracknum.split('/')
                 track.album_track_number = int(num)
                 track.album_total_tracks = int(total)
             else:
-                track.album_track_number = int(discnum)
+                track.album_track_number = int(tracknum)
                 try:
                     track.album_total_tracks = int(metadata.tags.tracktotal[0])
                 except:
                     track.album_total_tracks = int(metadata.tags.totaltracks[0])
         except:
             pass
+
         try:
             discnum = metadata.tags.discnumber[0]
             if discnum.find('/') != -1:
@@ -111,9 +127,10 @@ def create_track_from_file(file, owner):
                     track.album_total_discs = int(metadata.tags.totaldiscs[0])
         except:
             pass
+
     except:
         try:
-            with NamedTemporaryFile(suffix=guess_extension(metadata.pictures[0].mime_type)) as temp:
+            with NamedTemporaryFile(suffix=mimetypes.guess_extension(metadata.pictures[0].mime_type)) as temp:
                 temp.write(metadata.pictures[0].data)
                 track.image = temp
                 track.save()
